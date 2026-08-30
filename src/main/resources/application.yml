@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: finz-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finz
+    username: postgres
+    password: Raghavan23
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+finz:
+  jwt:
+    secret: ${JWT_SECRET:change-this-super-secret-key-min-32-bytes-long-please}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+logging:
+  level:
+    com.finz: INFO
