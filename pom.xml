@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.finz</groupId>
-    <artifactId>finz-backend</artifactId>
+    <groupId>com.aequus</groupId>
+    <artifactId>aequus-backend</artifactId>
     <version>1.0.0</version>
-    <name>finz-backend</name>
-    <description>Finz V1 - Personal Financial Records Application</description>
+    <name>aequus-backend</name>
+    <description>Aequus - Personal Financial Operating System</description>
 
     <properties>
         <java.version>21</java.version>

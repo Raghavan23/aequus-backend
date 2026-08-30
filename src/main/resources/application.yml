@@ -1,9 +1,9 @@
 spring:
   application:
-    name: finz-backend
+    name: aequus-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/finz
+    url: jdbc:postgresql://localhost:5432/aequus
     username: postgres
     password: Raghavan23
     driver-class-name: org.postgresql.Driver
@@ -27,7 +27,7 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
-finz:
+aequus:
   jwt:
     secret: ${JWT_SECRET:change-this-super-secret-key-min-32-bytes-long-please}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
@@ -36,4 +36,4 @@ finz:
 
 logging:
   level:
-    com.finz: INFO
+    com.aequus: INFO
