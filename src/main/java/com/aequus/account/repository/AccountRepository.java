@@ -11,13 +11,15 @@ import java.util.UUID;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, UUID> {
 
-    List<Account> findAllByUserIdAndArchivedFalseOrderByCreatedAtAsc(UUID userId);
+    List<Account> findAllByUserIdAndArchivedFalseAndIsDeletedFalseOrderByCreatedAtAsc(UUID userId);
 
-    List<Account> findAllByUserIdOrderByCreatedAtAsc(UUID userId);
+    List<Account> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtAsc(UUID userId);
+
+    Optional<Account> findByIdAndUserIdAndIsDeletedFalse(UUID id, UUID userId);
 
     Optional<Account> findByIdAndUserId(UUID id, UUID userId);
 
     boolean existsByIdAndUserId(UUID id, UUID userId);
 
-    long countByUserIdAndArchivedFalse(UUID userId);
+    long countByUserIdAndArchivedFalseAndIsDeletedFalse(UUID userId);
 }

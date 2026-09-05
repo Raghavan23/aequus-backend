@@ -84,7 +84,7 @@ class AccountServiceTest {
         Account salary = new Account(userId, "Corporate Salary", AccountType.SALARY, "INR",
                 new BigDecimal("2000.00"), null, null, null, null);
 
-        when(accountRepository.findAllByUserIdAndArchivedFalseOrderByCreatedAtAsc(userId))
+        when(accountRepository.findAllByUserIdAndArchivedFalseAndIsDeletedFalseOrderByCreatedAtAsc(userId))
                 .thenReturn(List.of(current, savings, salary));
 
         AccountSummaryResponse summary = accountService.getSummary();
@@ -103,7 +103,7 @@ class AccountServiceTest {
         Account savings = new Account(userId, "Savings", AccountType.SAVINGS, "INR",
                 new BigDecimal("1000.00"), null, null, null, null);
 
-        when(accountRepository.findByIdAndUserId(accountId, userId)).thenReturn(Optional.of(savings));
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.of(savings));
 
         accountService.creditAccount(accountId, userId, new BigDecimal("500.00"));
 
@@ -115,7 +115,7 @@ class AccountServiceTest {
         Account savings = new Account(userId, "Savings", AccountType.SAVINGS, "INR",
                 new BigDecimal("1000.00"), null, null, null, null);
 
-        when(accountRepository.findByIdAndUserId(accountId, userId)).thenReturn(Optional.of(savings));
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.of(savings));
 
         accountService.debitAccount(accountId, userId, new BigDecimal("200.00"));
 
@@ -123,9 +123,25 @@ class AccountServiceTest {
     }
 
     @Test
+    void delete_ShouldSoftDeleteAccount() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+
+        Account savings = new Account(userId, "Savings", AccountType.SAVINGS, "INR",
+                new BigDecimal("1000.00"), null, null, null, null);
+
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.of(savings));
+
+        accountService.delete(accountId);
+
+        assertThat(savings.isDeleted()).isTrue();
+        assertThat(savings.getDeletedAt()).isNotNull();
+        verify(accountRepository).save(savings);
+    }
+
+    @Test
     void getById_WhenNotOwned_ShouldThrowResourceNotFound() {
         when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
-        when(accountRepository.findByIdAndUserId(accountId, userId)).thenReturn(Optional.empty());
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> accountService.getById(accountId))
                 .isInstanceOf(ResourceNotFoundException.class);

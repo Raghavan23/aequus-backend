@@ -38,13 +38,8 @@ public class FinancialRecordService {
         request.category().validateBelongsTo(request.type());
 
         UUID userId = currentUserProvider.getCurrentUserId();
-        String accountName = null;
-
-        if (request.accountId() != null) {
-            Account account = getOwnedAccountOrThrow(request.accountId(), userId);
-            accountName = account.getName();
-            applyBalanceChange(account, request.type(), request.amount());
-        }
+        Account account = getOwnedAccountOrThrow(request.accountId(), userId);
+        applyBalanceChange(account, request.type(), request.amount());
 
         FinancialRecord record = new FinancialRecord(
                 userId,
@@ -55,16 +50,16 @@ public class FinancialRecordService {
         );
         FinancialRecord saved = financialRecordRepository.save(record);
 
-        return FinancialRecordResponse.from(saved, accountName);
+        return FinancialRecordResponse.from(saved, account.getName());
     }
 
     @Transactional(readOnly = true)
     public List<FinancialRecordResponse> getAllForCurrentUser() {
         UUID userId = currentUserProvider.getCurrentUserId();
-        Map<UUID, String> accountNames = accountRepository.findAllByUserIdOrderByCreatedAtAsc(userId).stream()
+        Map<UUID, String> accountNames = accountRepository.findAllByUserIdAndIsDeletedFalseOrderByCreatedAtAsc(userId).stream()
                 .collect(Collectors.toMap(Account::getId, Account::getName, (existing, replacement) -> existing));
 
-        return financialRecordRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+        return financialRecordRepository.findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId).stream()
                 .map(record -> FinancialRecordResponse.from(
                         record,
                         record.getAccountId() != null ? accountNames.get(record.getAccountId()) : null
@@ -75,12 +70,9 @@ public class FinancialRecordService {
     @Transactional(readOnly = true)
     public FinancialRecordResponse getById(UUID id) {
         FinancialRecord record = getOwnedRecordOrThrow(id);
-        String accountName = null;
-        if (record.getAccountId() != null) {
-            accountName = accountRepository.findByIdAndUserId(record.getAccountId(), record.getUserId())
-                    .map(Account::getName)
-                    .orElse(null);
-        }
+        String accountName = accountRepository.findByIdAndUserId(record.getAccountId(), record.getUserId())
+                .map(Account::getName)
+                .orElse(null);
         return FinancialRecordResponse.from(record, accountName);
     }
 
@@ -91,25 +83,19 @@ public class FinancialRecordService {
         UUID userId = currentUserProvider.getCurrentUserId();
         FinancialRecord record = getOwnedRecordOrThrow(id);
 
-        // 1. Revert previous balance impact on old account (if any)
-        if (record.getAccountId() != null) {
-            accountRepository.findByIdAndUserId(record.getAccountId(), userId).ifPresent(oldAccount ->
-                    revertBalanceChange(oldAccount, record.getType(), record.getAmount())
-            );
-        }
+        // 1. Revert previous balance impact on old account
+        accountRepository.findByIdAndUserId(record.getAccountId(), userId).ifPresent(oldAccount ->
+                revertBalanceChange(oldAccount, record.getType(), record.getAmount())
+        );
 
-        // 2. Apply new balance impact on target account (if any)
-        String accountName = null;
-        if (request.accountId() != null) {
-            Account newAccount = getOwnedAccountOrThrow(request.accountId(), userId);
-            accountName = newAccount.getName();
-            applyBalanceChange(newAccount, request.type(), request.amount());
-        }
+        // 2. Apply new balance impact on target account
+        Account newAccount = getOwnedAccountOrThrow(request.accountId(), userId);
+        applyBalanceChange(newAccount, request.type(), request.amount());
 
         // 3. Update record fields
         record.update(request.accountId(), request.type(), request.category(), request.amount());
 
-        return FinancialRecordResponse.from(record, accountName);
+        return FinancialRecordResponse.from(record, newAccount.getName());
     }
 
     @Transactional
@@ -117,14 +103,14 @@ public class FinancialRecordService {
         UUID userId = currentUserProvider.getCurrentUserId();
         FinancialRecord record = getOwnedRecordOrThrow(id);
 
-        // Revert balance impact on account before deleting
-        if (record.getAccountId() != null) {
-            accountRepository.findByIdAndUserId(record.getAccountId(), userId).ifPresent(account ->
-                    revertBalanceChange(account, record.getType(), record.getAmount())
-            );
-        }
+        // Revert balance impact on account before soft deleting
+        accountRepository.findByIdAndUserId(record.getAccountId(), userId).ifPresent(account ->
+                revertBalanceChange(account, record.getType(), record.getAmount())
+        );
 
-        financialRecordRepository.deleteByIdAndUserId(id, userId);
+        // Soft delete record
+        record.softDelete();
+        financialRecordRepository.save(record);
     }
 
     private void applyBalanceChange(Account account, FinancialType type, BigDecimal amount) {
@@ -150,7 +136,7 @@ public class FinancialRecordService {
 
     private FinancialRecord getOwnedRecordOrThrow(UUID id) {
         UUID userId = currentUserProvider.getCurrentUserId();
-        return financialRecordRepository.findByIdAndUserId(id, userId)
+        return financialRecordRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Financial record not found"));
     }
 }

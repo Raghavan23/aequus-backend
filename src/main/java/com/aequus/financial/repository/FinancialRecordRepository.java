@@ -9,9 +9,9 @@ import java.util.UUID;
 
 public interface FinancialRecordRepository extends JpaRepository<FinancialRecord, UUID> {
 
-    List<FinancialRecord> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<FinancialRecord> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(UUID userId);
+
+    Optional<FinancialRecord> findByIdAndUserIdAndIsDeletedFalse(UUID id, UUID userId);
 
     Optional<FinancialRecord> findByIdAndUserId(UUID id, UUID userId);
-
-    void deleteByIdAndUserId(UUID id, UUID userId);
 }

@@ -19,7 +19,7 @@ public class FinancialRecord {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "account_id")
+    @Column(name = "account_id", nullable = false)
     private UUID accountId;
 
     @Enumerated(EnumType.STRING)
@@ -32,6 +32,12 @@ public class FinancialRecord {
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,6 +52,9 @@ public class FinancialRecord {
     }
 
     public FinancialRecord(UUID userId, UUID accountId, FinancialType type, FinancialCategory category, BigDecimal amount) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
         this.userId = userId;
         this.accountId = accountId;
         this.type = type;
@@ -53,19 +62,19 @@ public class FinancialRecord {
         this.amount = amount;
     }
 
-    public FinancialRecord(UUID userId, FinancialType type, FinancialCategory category, BigDecimal amount) {
-        this(userId, null, type, category, amount);
-    }
-
     public void update(UUID accountId, FinancialType type, FinancialCategory category, BigDecimal amount) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
         this.accountId = accountId;
         this.type = type;
         this.category = category;
         this.amount = amount;
     }
 
-    public void update(FinancialType type, FinancialCategory category, BigDecimal amount) {
-        update(this.accountId, type, category, amount);
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = Instant.now();
     }
 
     public UUID getId() {
@@ -90,6 +99,14 @@ public class FinancialRecord {
 
     public BigDecimal getAmount() {
         return amount;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public Instant getCreatedAt() {

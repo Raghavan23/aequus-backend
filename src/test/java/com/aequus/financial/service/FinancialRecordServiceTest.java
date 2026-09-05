@@ -107,7 +107,7 @@ class FinancialRecordServiceTest {
     @Test
     void create_WhenCategoryMismatch_ShouldThrowBadRequest() {
         FinancialRecordRequest request = new FinancialRecordRequest(
-                null,
+                accountId,
                 FinancialType.INCOME,
                 FinancialCategory.FOOD, // Food is an expense category
                 new BigDecimal("100.00")
@@ -118,5 +118,29 @@ class FinancialRecordServiceTest {
                 .hasMessageContaining("not valid for type");
 
         verifyNoInteractions(financialRecordRepository);
+    }
+
+    @Test
+    void delete_ShouldSoftDeleteAndRevertAccountBalance() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+
+        UUID recordId = UUID.randomUUID();
+        Account account = new Account(userId, "Savings", AccountType.SAVINGS, "INR",
+                new BigDecimal("1000.00"), null, null, null, null);
+        FinancialRecord record = new FinancialRecord(userId, accountId, FinancialType.EXPENSE,
+                FinancialCategory.FOOD, new BigDecimal("200.00"));
+
+        when(financialRecordRepository.findByIdAndUserIdAndIsDeletedFalse(recordId, userId))
+                .thenReturn(Optional.of(record));
+        when(accountRepository.findByIdAndUserId(accountId, userId))
+                .thenReturn(Optional.of(account));
+
+        financialRecordService.delete(recordId);
+
+        // Balance reverted: was 1000, debited 200 before, so deleting expense credits 200 -> 1200
+        assertThat(account.getBalance()).isEqualByComparingTo("1200.00");
+        assertThat(record.isDeleted()).isTrue();
+        assertThat(record.getDeletedAt()).isNotNull();
+        verify(financialRecordRepository).save(record);
     }
 }

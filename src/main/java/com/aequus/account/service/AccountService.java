@@ -46,7 +46,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public List<AccountResponse> getAllForCurrentUser() {
         UUID userId = currentUserProvider.getCurrentUserId();
-        return accountRepository.findAllByUserIdAndArchivedFalseOrderByCreatedAtAsc(userId).stream()
+        return accountRepository.findAllByUserIdAndArchivedFalseAndIsDeletedFalseOrderByCreatedAtAsc(userId).stream()
                 .map(AccountResponse::from)
                 .toList();
     }
@@ -63,6 +63,7 @@ public class AccountService {
                 request.name().trim(),
                 request.type(),
                 request.currency(),
+                request.balance(),
                 request.institutionName() != null ? request.institutionName().trim() : null,
                 request.accountNumberMask() != null ? request.accountNumberMask().trim() : null,
                 request.color(),
@@ -80,13 +81,14 @@ public class AccountService {
     @Transactional
     public void delete(UUID id) {
         Account account = getOwnedAccountOrThrow(id);
-        accountRepository.delete(account);
+        account.softDelete();
+        accountRepository.save(account);
     }
 
     @Transactional(readOnly = true)
     public AccountSummaryResponse getSummary() {
         UUID userId = currentUserProvider.getCurrentUserId();
-        List<Account> accounts = accountRepository.findAllByUserIdAndArchivedFalseOrderByCreatedAtAsc(userId);
+        List<Account> accounts = accountRepository.findAllByUserIdAndArchivedFalseAndIsDeletedFalseOrderByCreatedAtAsc(userId);
 
         BigDecimal totalAssets = BigDecimal.ZERO;
         BigDecimal totalLiabilities = BigDecimal.ZERO;
@@ -112,7 +114,7 @@ public class AccountService {
     @Transactional
     public void creditAccount(UUID accountId, UUID userId, BigDecimal amount) {
         if (accountId == null) return;
-        Account account = accountRepository.findByIdAndUserId(accountId, userId)
+        Account account = accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found for transaction"));
         account.credit(amount);
     }
@@ -120,14 +122,14 @@ public class AccountService {
     @Transactional
     public void debitAccount(UUID accountId, UUID userId, BigDecimal amount) {
         if (accountId == null) return;
-        Account account = accountRepository.findByIdAndUserId(accountId, userId)
+        Account account = accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found for transaction"));
         account.debit(amount);
     }
 
     public Account getOwnedAccountOrThrow(UUID id) {
         UUID userId = currentUserProvider.getCurrentUserId();
-        return accountRepository.findByIdAndUserId(id, userId)
+        return accountRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
     }
 }

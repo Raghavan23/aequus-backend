@@ -47,6 +47,12 @@ public class Account {
     @Column(name = "is_archived", nullable = false)
     private boolean archived = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -72,12 +78,15 @@ public class Account {
         this.icon = (icon != null && !icon.isBlank()) ? icon : "account_balance";
     }
 
-    public void update(String name, AccountType type, String currency, String institutionName,
-                       String accountNumberMask, String color, String icon) {
+    public void update(String name, AccountType type, String currency, BigDecimal balance,
+                       String institutionName, String accountNumberMask, String color, String icon) {
         this.name = name;
         this.type = type;
         if (currency != null && !currency.isBlank()) {
             this.currency = currency.toUpperCase();
+        }
+        if (balance != null) {
+            this.balance = balance;
         }
         this.institutionName = institutionName;
         this.accountNumberMask = accountNumberMask;
@@ -109,6 +118,11 @@ public class Account {
 
     public void setArchived(boolean archived) {
         this.archived = archived;
+    }
+
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = Instant.now();
     }
 
     public UUID getId() {
@@ -153,6 +167,14 @@ public class Account {
 
     public boolean isArchived() {
         return archived;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public Instant getCreatedAt() {
