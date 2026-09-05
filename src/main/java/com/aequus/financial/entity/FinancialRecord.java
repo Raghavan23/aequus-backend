@@ -19,6 +19,9 @@ public class FinancialRecord {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "account_id")
+    private UUID accountId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private FinancialType type;
@@ -42,17 +45,27 @@ public class FinancialRecord {
         // JPA
     }
 
-    public FinancialRecord(UUID userId, FinancialType type, FinancialCategory category, BigDecimal amount) {
+    public FinancialRecord(UUID userId, UUID accountId, FinancialType type, FinancialCategory category, BigDecimal amount) {
         this.userId = userId;
+        this.accountId = accountId;
+        this.type = type;
+        this.category = category;
+        this.amount = amount;
+    }
+
+    public FinancialRecord(UUID userId, FinancialType type, FinancialCategory category, BigDecimal amount) {
+        this(userId, null, type, category, amount);
+    }
+
+    public void update(UUID accountId, FinancialType type, FinancialCategory category, BigDecimal amount) {
+        this.accountId = accountId;
         this.type = type;
         this.category = category;
         this.amount = amount;
     }
 
     public void update(FinancialType type, FinancialCategory category, BigDecimal amount) {
-        this.type = type;
-        this.category = category;
-        this.amount = amount;
+        update(this.accountId, type, category, amount);
     }
 
     public UUID getId() {
@@ -61,6 +74,10 @@ public class FinancialRecord {
 
     public UUID getUserId() {
         return userId;
+    }
+
+    public UUID getAccountId() {
+        return accountId;
     }
 
     public FinancialType getType() {

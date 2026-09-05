@@ -7,12 +7,15 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Note: this DTO intentionally has no userId field. Ownership is always
  * derived from the authenticated security context, never from client input.
  */
 public record FinancialRecordRequest(
+        UUID accountId,
+
         @NotNull(message = "Type is required")
         FinancialType type,
 
@@ -24,4 +27,7 @@ public record FinancialRecordRequest(
         @Digits(integer = 13, fraction = 2, message = "Amount must have at most 2 decimal places")
         BigDecimal amount
 ) {
+    public FinancialRecordRequest(FinancialType type, FinancialCategory category, BigDecimal amount) {
+        this(null, type, category, amount);
+    }
 }
