@@ -99,6 +99,49 @@ class AccountServiceTest {
     }
 
     @Test
+    void update_WhenValidRequest_ShouldUpdateFields() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+
+        Account account = new Account(userId, "Old Name", AccountType.SAVINGS, "INR",
+                new BigDecimal("1000.00"), null, null, null, null);
+
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId))
+                .thenReturn(Optional.of(account));
+
+        AccountRequest updateRequest = new AccountRequest(
+                "Updated Savings",
+                AccountType.SAVINGS,
+                "INR",
+                new BigDecimal("1200.00"),
+                "ICICI Bank",
+                "• 5678",
+                "#10b981",
+                "savings"
+        );
+
+        AccountResponse response = accountService.update(accountId, updateRequest);
+
+        assertThat(response.name()).isEqualTo("Updated Savings");
+        assertThat(response.institutionName()).isEqualTo("ICICI Bank");
+        assertThat(response.balance()).isEqualByComparingTo("1200.00");
+    }
+
+    @Test
+    void archive_WhenValid_ShouldSetArchivedTrue() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+
+        Account account = new Account(userId, "Checking", AccountType.CURRENT, "INR",
+                new BigDecimal("1000.00"), null, null, null, null);
+
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId))
+                .thenReturn(Optional.of(account));
+
+        accountService.archive(accountId);
+
+        assertThat(account.isArchived()).isTrue();
+    }
+
+    @Test
     void creditAccount_ShouldIncreaseBalance() {
         Account savings = new Account(userId, "Savings", AccountType.SAVINGS, "INR",
                 new BigDecimal("1000.00"), null, null, null, null);
@@ -144,6 +187,33 @@ class AccountServiceTest {
         when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> accountService.getById(accountId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Account not found");
+    }
+
+    @Test
+    void update_WhenNotOwned_ShouldThrowResourceNotFound() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.empty());
+
+        AccountRequest updateRequest = new AccountRequest(
+                "Updated",
+                AccountType.SAVINGS,
+                "INR",
+                BigDecimal.ZERO,
+                null, null, null, null
+        );
+
+        assertThatThrownBy(() -> accountService.update(accountId, updateRequest))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void archive_WhenNotOwned_ShouldThrowResourceNotFound() {
+        when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
+        when(accountRepository.findByIdAndUserIdAndIsDeletedFalse(accountId, userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountService.archive(accountId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

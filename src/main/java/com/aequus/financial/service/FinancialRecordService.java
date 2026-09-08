@@ -56,8 +56,12 @@ public class FinancialRecordService {
     @Transactional(readOnly = true)
     public List<FinancialRecordResponse> getAllForCurrentUser() {
         UUID userId = currentUserProvider.getCurrentUserId();
-        Map<UUID, String> accountNames = accountRepository.findAllByUserIdAndIsDeletedFalseOrderByCreatedAtAsc(userId).stream()
-                .collect(Collectors.toMap(Account::getId, Account::getName, (existing, replacement) -> existing));
+        Map<UUID, String> accountNames = accountRepository.findAllByUserIdOrderByCreatedAtAsc(userId).stream()
+                .collect(Collectors.toMap(
+                        Account::getId,
+                        this::formatAccountDisplayName,
+                        (existing, replacement) -> existing
+                ));
 
         return financialRecordRepository.findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId).stream()
                 .map(record -> FinancialRecordResponse.from(
@@ -71,9 +75,16 @@ public class FinancialRecordService {
     public FinancialRecordResponse getById(UUID id) {
         FinancialRecord record = getOwnedRecordOrThrow(id);
         String accountName = accountRepository.findByIdAndUserId(record.getAccountId(), record.getUserId())
-                .map(Account::getName)
+                .map(this::formatAccountDisplayName)
                 .orElse(null);
         return FinancialRecordResponse.from(record, accountName);
+    }
+
+    private String formatAccountDisplayName(Account account) {
+        if (account.isDeleted() || account.isArchived()) {
+            return account.getName() + " (Archived)";
+        }
+        return account.getName();
     }
 
     @Transactional

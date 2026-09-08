@@ -15,6 +15,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtAsc(UUID userId);
 
+    List<Account> findAllByUserIdOrderByCreatedAtAsc(UUID userId);
+
     Optional<Account> findByIdAndUserIdAndIsDeletedFalse(UUID id, UUID userId);
 
     Optional<Account> findByIdAndUserId(UUID id, UUID userId);
