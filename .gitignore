@@ -4,3 +4,7 @@ target/
 *.iml
 .vscode/
 .env
+src/main/resources/application.yml
+application.yml
+application-*.yml
+!src/main/resources/application.example.yml

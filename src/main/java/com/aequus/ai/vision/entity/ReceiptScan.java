@@ -2,7 +2,9 @@ package com.aequus.ai.vision.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -49,6 +51,7 @@ public class ReceiptScan {
     @Column(name = "suggested_category", length = 50)
     private String suggestedCategory;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "raw_extracted_json", columnDefinition = "JSONB")
     private String rawExtractedJson;
 

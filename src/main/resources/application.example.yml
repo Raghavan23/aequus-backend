@@ -3,9 +3,9 @@ spring:
     name: aequus-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/aequus
-    username: postgres
-    password: Raghavan23
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aequus}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:your_db_password_here}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -33,6 +33,11 @@ aequus:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  ai:
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY:your_openrouter_api_key_here}
+      model: ${OPENROUTER_VISION_MODEL:dots-studio/dots-3-note-preview:free}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
 
 logging:
   level:
