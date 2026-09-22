@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class StatementImportService {
+public class BankStatementImportService {
 
     private final BankStatementParser bankStatementParser;
     private final BankTransactionRepository bankTransactionRepository;
@@ -34,12 +34,12 @@ public class StatementImportService {
     private final CurrentUserProvider currentUserProvider;
     private final AuditService auditService;
 
-    public StatementImportService(BankStatementParser bankStatementParser,
-                                  BankTransactionRepository bankTransactionRepository,
-                                  ClientRepository clientRepository,
-                                  UserRepository userRepository,
-                                  CurrentUserProvider currentUserProvider,
-                                  AuditService auditService) {
+    public BankStatementImportService(BankStatementParser bankStatementParser,
+                                      BankTransactionRepository bankTransactionRepository,
+                                      ClientRepository clientRepository,
+                                      UserRepository userRepository,
+                                      CurrentUserProvider currentUserProvider,
+                                      AuditService auditService) {
         this.bankStatementParser = bankStatementParser;
         this.bankTransactionRepository = bankTransactionRepository;
         this.clientRepository = clientRepository;

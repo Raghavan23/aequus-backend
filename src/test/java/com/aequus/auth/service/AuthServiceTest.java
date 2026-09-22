@@ -6,7 +6,10 @@ import com.aequus.auth.dto.RegisterRequest;
 import com.aequus.common.exception.ConflictException;
 import com.aequus.common.exception.UnauthorizedException;
 import com.aequus.common.security.JwtService;
+import com.aequus.organization.entity.Organization;
+import com.aequus.organization.service.OrganizationService;
 import com.aequus.user.entity.User;
+import com.aequus.user.entity.UserRole;
 import com.aequus.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +35,9 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private OrganizationService organizationService;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -40,20 +46,23 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
+    private Organization testOrg;
     private User testUser;
     private UUID userId;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        testUser = new User("Alex Mercer", "alex@example.com", "hashed_password");
+        testOrg = new Organization("Alex Firm");
+        testUser = new User("Alex Mercer", "alex@example.com", "hashed_password", testOrg, UserRole.ADMIN);
     }
 
     @Test
     void register_WhenValidRequest_ShouldCreateUserAndReturnToken() {
-        RegisterRequest request = new RegisterRequest("Alex Mercer", "alex@example.com", "SecurePass123!");
+        RegisterRequest request = new RegisterRequest("Alex Mercer", "alex@example.com", "SecurePass123!", "Alex Firm");
 
         when(userRepository.existsByEmail("alex@example.com")).thenReturn(false);
+        when(organizationService.createDefaultOrganization("Alex Firm")).thenReturn(testOrg);
         when(passwordEncoder.encode("SecurePass123!")).thenReturn("hashed_password");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
         when(jwtService.generateToken(any(), eq("alex@example.com"))).thenReturn("mocked_jwt_token");
@@ -63,12 +72,30 @@ class AuthServiceTest {
         assertThat(response.token()).isEqualTo("mocked_jwt_token");
         assertThat(response.user().email()).isEqualTo("alex@example.com");
         assertThat(response.user().name()).isEqualTo("Alex Mercer");
+        verify(organizationService).createDefaultOrganization("Alex Firm");
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void register_WhenNoOrganizationProvided_ShouldDeriveDefaultOrgName() {
+        RegisterRequest request = new RegisterRequest("Alex Mercer", "alex@example.com", "SecurePass123!", null);
+
+        when(userRepository.existsByEmail("alex@example.com")).thenReturn(false);
+        when(organizationService.createDefaultOrganization("Alex Mercer's Firm")).thenReturn(testOrg);
+        when(passwordEncoder.encode("SecurePass123!")).thenReturn("hashed_password");
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+        when(jwtService.generateToken(any(), eq("alex@example.com"))).thenReturn("mocked_jwt_token");
+
+        AuthResponse response = authService.register(request);
+
+        assertThat(response.token()).isEqualTo("mocked_jwt_token");
+        verify(organizationService).createDefaultOrganization("Alex Mercer's Firm");
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void register_WhenEmailAlreadyExists_ShouldThrowConflictException() {
-        RegisterRequest request = new RegisterRequest("Alex Mercer", "alex@example.com", "SecurePass123!");
+        RegisterRequest request = new RegisterRequest("Alex Mercer", "alex@example.com", "SecurePass123!", "Alex Firm");
 
         when(userRepository.existsByEmail("alex@example.com")).thenReturn(true);
 
@@ -76,6 +103,7 @@ class AuthServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("already exists");
 
+        verify(organizationService, never()).createDefaultOrganization(any());
         verify(userRepository, never()).save(any());
     }
 
@@ -116,3 +144,4 @@ class AuthServiceTest {
                 .hasMessageContaining("Invalid email or password");
     }
 }
+

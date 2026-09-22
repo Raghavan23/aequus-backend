@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/statements", "/api/v1/statements"})
+@RequestMapping({"/api/financial-statements", "/api/v1/statements"})
 public class StatementController {
 
     private final StatementImportService statementImportService;
