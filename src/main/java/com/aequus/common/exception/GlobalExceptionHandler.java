@@ -29,6 +29,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(400, "Bad Request", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.aequus.financial.statement.exception.StatementParseException.class)
+    public ResponseEntity<ErrorResponse> handleStatementParseException(com.aequus.financial.statement.exception.StatementParseException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(400, "Statement Parsing Error", ex.getMessage()));
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

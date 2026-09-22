@@ -11,6 +11,8 @@ public interface FinancialRecordRepository extends JpaRepository<FinancialRecord
 
     List<FinancialRecord> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(UUID userId);
 
+    List<FinancialRecord> findAllByUserIdAndAccountIdAndIsDeletedFalse(UUID userId, UUID accountId);
+
     Optional<FinancialRecord> findByIdAndUserIdAndIsDeletedFalse(UUID id, UUID userId);
 
     Optional<FinancialRecord> findByIdAndUserId(UUID id, UUID userId);
